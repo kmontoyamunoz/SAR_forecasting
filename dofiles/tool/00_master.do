@@ -7,7 +7,7 @@ Author:				Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
 Creation Date:		10/16/2024
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  10/25/2024
+Modification date:  11/7/2024
 ===================================================================================================*/
 
 * NOTE: You will need to have python installed in your device + the following packages.
@@ -33,9 +33,9 @@ gl inflows 		"Seriestableview_10_28_2024"	//	Remittances file name, structure "S
 gl date_inflows "Oct-28-2024"					//	Remittances file download date
 
 ** Paths
-gl path 		"C:\Users\wb520054\OneDrive - WBG\02_SAR Stats Team\Microsimulations\Regional model"
+gl path 		"C:\Users\wb520054\OneDrive - WBG\02_SAR Stats Team\Microsimulations\Regional model\SAR_forecasting"
 gl dofiles 		"$path\dofiles\tool"
-gl mpo_version 	"$path\exercises" 					// Folder name
+gl mpo_version 	"C:\Users\wb520054\OneDrive - WBG\02_SAR Stats Team\Microsimulations\Regional model\\exercises" // Folder name
 gl downloads	"C:\Users\wb520054\Downloads"		// Your downloads folder for retrieving remittances file
 
 * Stable globals - Should not be changed

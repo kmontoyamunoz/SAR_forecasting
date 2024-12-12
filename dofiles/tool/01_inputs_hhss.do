@@ -7,7 +7,7 @@ Author:				Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
 Creation Date:		10/23/2024
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  10/31/2024
+Modification date:  11/07/2024
 ===================================================================================================*/
 
 drop _all
@@ -34,7 +34,7 @@ foreach country of global countries_hhss { // Open loop countries
 		 & !inlist("`country'`year'","BGD2005","BGD2010","BGD2016","BGD2022") /// BGD2000  & !inlist("`country'`year'","BTN2022") /// BTN2003 BTN2007 BTN2012 BTN2017 & !inlist("`country'`year'","IND2004","IND2009","IND2011") /// 
 		 & !inlist("`country'`year'","MDV2019") /// MDV2002 MDV2009 MDV2016 & !inlist("`country'`year'","NPL2010") /// NPL2003 NPL2022 
 		 & !inlist("`country'`year'","PAK2018") /// PAK2004 PAK2005 PAK2007 PAK2010 PAK2011 PAK2013 PAK2015
-		 & !inlist("`country'`year'","LKA2006","LKA2009","LKA2016","LKA2019") /// LKA2002 LKA2012
+		 & !inlist("`country'`year'","LKA2006","LKA2009","LKA2012","LKA2016","LKA2019") /// LKA2002
 		 continue
 		else {
 		
@@ -71,9 +71,9 @@ foreach country of global countries_hhss { // Open loop countries
 		
 		* Merge
 		use `IND'
-		merge m:1 countrycode year using `dlwcpi', nogen keep(1 3)
 		merge 1:1 hhid pid using `LBR', nogen keep(1 3)
 		*merge 1:1 hhid pid using `INC', nogen keep(1 3)
+		merge m:1 countrycode year using `dlwcpi', nogen keep(1 3)
 
 		
 		* Defining population of reference 
@@ -98,12 +98,27 @@ foreach country of global countries_hhss { // Open loop countries
 		replace skilled = 0 if occup_year==9 			| (inlist(occup_year,4,5,6,7,8,.) & !inlist(educat7,5,6,7))
 		replace skilled = 0 if inrange(occup_year,4,8) 	& educat7 == .
 
+		//1 "Agriculture, Hunting, Fishing, etc." 2 "Mining" 3 "Manufacturing" 4 "Public Utility Services" 5 "Construction" 6 "Commerce" 7 "Transport and Communications" 8 "Financial and Business Services" 9 "Public Administration" 10 "Others
+		
+		* public job_status
+		rename ocusec_year ocusec_year_orig
+		qui sum ocusec_year_orig
+		if r(N) == 0 gen ocusec_year = ocusec
+		else gen ocusec_year = ocusec_year_orig
+		label values ocusec ocusec_year ocusec_year_orig ocusec
+
+		gen     public_job = 0 if lstatus == 1 & welfare != .
+		replace public_job = 1 if lstatus == 1 & welfare != . & ocusec_year == 1
+
 		
 		* Sector main occupation
 		cap rename industrycat10_year industrycat10_year_orig
 		qui sum industrycat10_year_orig
 		if r(N) == 0 recode industrycat10 (1=1 "Agriculture") (2 3 4 5 =2 "Industry") (6 7 8 9 10 =3 "Services") , gen(sector_3)
 		else qui recode industrycat10_year (1=1 "Agriculture") (2 3 4 5 =2 "Industry") (6 7 8 9 10 =3 "Services") , gen(sector_3)
+		
+		note: by definiton the public job is part of formal services sector
+		replace sector_3  = 3 if !inlist(sector_3, 3) & public_job ==1 & sector_3!= .
 		
 
 		* Labor income - skilled/unskilled by sector and total
