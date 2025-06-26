@@ -8,7 +8,7 @@ E-mail:				solivieri@worldbank.org; kmontoyamunoz@worldbank.org
 Creation Date:		11/4/2024
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  12/11/2024
+Modification date:  4/4/2024
 ===================================================================================================*/
 
 * NOTE: Be careful: check by-one-bye
@@ -20,11 +20,11 @@ Modification date:  12/11/2024
 * Status
 rename  lstatus_year lstatus_year_orig
 gen     lstatus_year = lstatus
-replace lstatus_year = 1 if  !inlist(wage,0,.)
+replace lstatus_year = 1 if  !inlist(ip,0,.) & "${country}" == "BGD"
 
 * Employment/unemployment
-gen emplyd 		= lstatus == 1 	if welfare != .
-gen unemplyd 	= lstatus == 2  if welfare != .
+gen emplyd 		= lstatus_year == 1 if welfare != . & lstatus != .
+gen unemplyd 	= lstatus_year == 2 if welfare != . & lstatus != .
 
 * Sample
 cap drop sample
@@ -32,16 +32,18 @@ gen sample 		= age > 14 & age != .
 cap clonevar id	= hhid
 
 * Skill/Unskilled classification
+/*Following the ILO skill level classification[1], we classify workers into high-skilled and low-skilled. Workers in occupations such as Managers (1), Professionals (2), and Technicians and Associate professionals (3) correspond to "High-skilled" workers, whilst workers in Elementary Occupations (9) are "low-skilled." Given the diverse nature of the intermediate categories of this classification (Clerical support (4), Service and Sales (6), Skilled Agricultural, Forestry and Fisheries (6), Craft and Related Trades (7), and Plant and Machine Operators, and Assembler (8)), we added a layer to the high/low skill classification by using educational attainment and considering those with complete secondary and above as "high-skilled", and "low-skilled" otherwise. This is regardless of the workers' economic activity sector (agriculture, industry, services). Armed forces are excluded from the microsimulation model and, hence, from this classification. The table below summarizes the skill-level classification used.*/
 rename occup_year occup_year_orig
 qui sum occup_year_orig
 if r(N) == 0 gen occup_year = occup
 else gen occup_year = occup_year_orig
-	
+			
 cap drop skilled
 qui gen skilled = .
 replace skilled = 1 if inrange(occup_year,1,3) 	| (inlist(occup_year,4,5,6,7,8,.) & inlist(educat7,5,6,7))
 replace skilled = 0 if occup_year==9 			| (inlist(occup_year,4,5,6,7,8,.) & !inlist(educat7,5,6,7))
 replace skilled = 0 if inrange(occup_year,4,8) 	& educat7 == .
+replace skilled = . if occup_year == . & educat7 == .
 gen unskilled = !skilled if skilled != .
 
 
@@ -78,6 +80,7 @@ if $national == 0 {
 ===================================================================================================*/
 
 * Economic sectors
+/* 1 "Agriculture, Hunting, Fishing, etc." 2 "Mining" 3 "Manufacturing" 4 "Public Utility Services" 5 "Construction" 6 "Commerce" 7 "Transport and Communications" 8 "Financial and Business Services" 9 "Public Administration" 10 "Others */
 local sectors_vars "industrycat10 industrycat10_2"
 foreach var of local sectors_vars {
 	cap rename `var'_year `var'_year_orig
@@ -85,8 +88,6 @@ foreach var of local sectors_vars {
 	if r(N) == 0 recode `var' (1=1 "Agriculture") (2 3 4 5 =2 "Industry") (6 7 8 9 10 =3 "Services") , gen(sector_`var')
 	else qui recode `var'_year (1=1 "Agriculture") (2 3 4 5 =2 "Industry") (6 7 8 9 10 =3 "Services") , gen(sector_`var')
 }
-
-//1 "Agriculture, Hunting, Fishing, etc." 2 "Mining" 3 "Manufacturing" 4 "Public Utility Services" 5 "Construction" 6 "Commerce" 7 "Transport and Communications" 8 "Financial and Business Services" 9 "Public Administration" 10 "Others
 
 ren (sector_industrycat10 sector_industrycat10_2) (sect_main sect_secu)
 

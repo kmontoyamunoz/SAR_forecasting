@@ -1,6 +1,6 @@
 
 /*===================================================================================================
-Project:			Microsimulations Inputs from Labor Force Surveys, 2017 PPP
+Project:			Microsimulations Inputs from Labor Force Surveys, PPP
 Institution:		World Bank - ESAPV
 
 Author:				Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
@@ -47,7 +47,7 @@ foreach country of global countries_lfs { // Open loop countries
 		* Support module - CPIs and PPPs
 		cap dlw, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v${cpi_version}_M) filename(Final_CPI_PPP_to_be_used.dta)
 		keep if code == "`country'" & year == `year'
-		keep code year cpi2017 icp2017
+		keep code year cpi${cpi_base} icp${cpi_base}
 		rename code countrycode
 		tempfile dlwcpi
 		save `dlwcpi', replace
@@ -101,12 +101,12 @@ foreach country of global countries_lfs { // Open loop countries
 		
 
 		* Labor income - skilled/unskilled by sector and total
-		qui gen ip_ppp17 = wage_nc / cpi2017 / icp2017 // Labor income main activity ppp 2017
-		for any 1 2 3: qui gen ip_sk_X 	 = ip_ppp17 if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 1
-		for any 1 2 3: qui gen ip_unsk_X = ip_ppp17 if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 0
-		qui gen ip_total = ip_ppp17 if sample == 1 & lstatus_year == 1 
-		qui gen ip_sk 	 = ip_ppp17 if sample == 1 & lstatus_year == 1 & sk == 1 
-		qui gen ip_unsk  = ip_ppp17 if sample == 1 & lstatus_year == 1 & sk == 0
+		qui gen ip_ppp = wage_nc / cpi${cpi_base} / icp${cpi_base} // Labor income main activity ppp
+		for any 1 2 3: qui gen ip_sk_X 	 = ip_ppp if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 1
+		for any 1 2 3: qui gen ip_unsk_X = ip_ppp if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 0
+		qui gen ip_total = ip_ppp if sample == 1 & lstatus_year == 1 
+		qui gen ip_sk 	 = ip_ppp if sample == 1 & lstatus_year == 1 & sk == 1 
+		qui gen ip_unsk  = ip_ppp if sample == 1 & lstatus_year == 1 & sk == 0
 
 		
 		* Number of workers - skilled/unskilled by sector

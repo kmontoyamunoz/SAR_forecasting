@@ -3,11 +3,11 @@
 Project:			Microsimulations Remittances Inputs from MFMod
 Institution:		World Bank - ESAPV
 
-Authors:			Kelly Y. Montoya (kmontoyamunoz@worldbank.org) & Catalina Garcia (cgarciagarcia@worldbank.org)
-Creation Date:		02/19/2024 Stata code (KM) - 7/16/2024 Python code (joint) - 08/05/2024 Integration (KM)
+Authors:			Kelly Y. Montoya (kmontoyamunoz@worldbank.org) 
+Creation Date:		02/19/2024
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  10/28/2024
+Modification date:  1/29/2025
 ===================================================================================================*/
 
 clear all 
@@ -19,19 +19,21 @@ clear all
 /*Download from: https://mtimodelling.worldbank.org/livempodata/mpodata.html
 series "Exports-Remittance Inflows, Value, Millions USD"
 */
-
+/*
 python
 
 import selenium
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 # Initialize the WebDriver
-driver = webdriver.Chrome(executable_path=r"$path\dofiles\programs\chromedriver-win64\chromedriver.exe")
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
 # URL to interact with
 url = 'https://mtimodelling.worldbank.org/livempodata/mpodata.html'
@@ -56,17 +58,16 @@ try:
                     checkbox.click()
                 time.sleep(1)  
                 break  
-            except Exception as e:
+            except (TimeoutException, ElementClickInterceptedException) as e:
                 print(f"Attempt {attempt + 1} failed: {e}")
                 time.sleep(2)  
 
     container_selector = '#tbll_WDI_Ctry > ul.unselectedCnts.variableTable.availableView.table-dimension-C'
 
     # List of countries within microsimulation
-    countries = ['ARG', 'BOL', 'BRA', 'CHL', 'COL', 'CRI', 'DOM', 'ECU', 'GTM', 
-                 'HND', 'MEX', 'NIC', 'PAN', 'PER', 'PRY', 'SLV', 'URY']
+    countries = ['AFG', 'BGD', 'BTN', 'IND', 'MDV', 'NPL', 'PAK', 'LKA']
     
-    # Select the 17 countries with microsimulations
+    # Select the countries with microsimulations
     for country_id in countries:
         click_checkbox_by_id(container_selector, country_id)
 
@@ -77,15 +78,22 @@ try:
         click_checkbox_by_id(container_selector, country_id, select=False)
 
     # Expand the Series dropdown
-    dropdown_link = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[data-toggle="collapse"][href="#selectedDimension_WDI_Series"]'))
-    )
-    dropdown_link.click()
+    try:
+		dropdown_link = WebDriverWait(driver, 10).until(
+			EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[data-toggle="collapse"][href="#selectedDimension_WDI_Series"]'))
+		)
+		dropdown_link.click()
+    except TimeoutException:
+        print("Series dropdown not found")
 
-    # Click the "Exports-Remittance Inflows, Value, Millions USD"
+    # List of series
+    series = ['cBXFSTREMTCD', 'FPCPITOTLXN']
+	
+	# Selecting inflows and CPI
     series_container_selector = '#selectedDimension_WDI_Series'
-    series_checkbox_id = 'cBXFSTREMTCD'
-    click_checkbox_by_id(series_container_selector, series_checkbox_id)
+    
+	for series_id in series:
+        click_checkbox_by_id(series_container_selector, series_id)
 
     # Unselect the default Series
     unselect_checkbox_id = 'cNYGDPMKTPKDZ'
@@ -120,7 +128,7 @@ finally:
     time.sleep(10)  # Time to observe or modify if needed
     driver.quit()
 end
-
+*/
 
 copy "${downloads}/${inflows}.csv" "${path_mpo}/${inflows}.csv", replace
 erase "${downloads}/${inflows}.csv"
@@ -132,11 +140,12 @@ erase "${downloads}/${inflows}.csv"
 
 import delimited "${path_mpo}/${inflows}.csv", varnames(nonames) stringcols(_all) clear
 
-forval j = 3/49 {
+forval j = 3/50 {
 	rename v`j' `= "y_" + v`j'[1]'
 }
 
-drop if _n in 1/2
+drop if v2 == ""
+drop in 1
 
 destring *, replace
 
@@ -152,14 +161,18 @@ replace country = "NPL" if v2 == "Nepal"
 replace country = "PAK" if v2 == "Pakistan"
 replace country = "LKA" if v2 == "Sri Lanka"
 
+gen v1_aux=substr(v1,-7,.)
+replace v1_aux = "Inflows" if v1_aux == "TREMTCD"
+replace v1_aux = "CPI" if v1_aux == "ITOTLXN"
 
 drop v1 v2
-order country
-drop if country == ""
+order country v1_aux
+ren v1_aux indicator
 
-reshape long y_, i(country) j(year)
+reshape long y_, i(country indicator) j(year)
+drop if y_ == .
 
-ren y_ exports_inflows
+ren y_ value
 
 gen date = "$date_inflows"
 

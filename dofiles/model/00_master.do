@@ -8,12 +8,17 @@ E-mail:				solivieri@worldbank.org; kmontoyamunoz@worldbank.org
 Creation Date:		11/4/2024
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  12/11/2024
+Modification date:  3/14/2025
 ===================================================================================================*/
 
-cap net install etime
-etime, start
 version 17.0
+
+cap ssc install etime
+cap ssc install apoverty
+cap ssc install ainequal
+cap ssc install ainequal0
+etime, start
+
 
 clear all
 clear mata
@@ -27,19 +32,19 @@ set more off
 * NOTE: YOU ONLY NEED TO CHANGE THESE OPTIONS
 
 * Globals for general paths
-gl priv_path 	"C:\Users\wb520054\OneDrive - WBG\02_SAR Stats Team\Microsimulations\Regional model"
-gl path  		"$priv_path\exercises"
-gl thedo    	"$priv_path\SAR_forecasting\dofiles\model"	// Do-files path
+gl priv_path 	"C:\Users\wb520054\OneDrive - WBG\02_SAR Stats Team\Microsimulations"
+gl path  		"$priv_path\SM2025"
+gl thedo    	"$priv_path\Regional model\SAR_forecasting\dofiles\model"	// Do-files path
 
 * Globals for country-year identification
-gl cpi_version 	11
+gl cpi_version 	12
 gl ppp 			2017	// Change for "yes" / "no" depending on the version
-gl country 		"LKA" 	// Country to upload
-gl year 		2009	// Year to upload - Base year dataset
-gl final_year 	2026	// Change for last simulated year
+gl country 		"BGD" 	// Country to upload
+gl year 		2022	// Year to upload - Base year dataset
+gl final_year 	2027	// Change for last simulated year
 
 * Globals for country-specific paths
-gl inputs   "${path}/${country}\Microsimulation_Inputs_${country}.xlsm" // Country's input Excel file
+gl inputs   "${path}/${country}\Microsimulation_Inputs_${country}_2020.xlsm" // Country's input Excel file
 cap mkdir 	"${path}/${country}\Data"
 gl data_out "${path}/${country}\Data"
 
@@ -47,9 +52,8 @@ gl data_out "${path}/${country}\Data"
 gl sector_model 	6 		// Change for "3" or "6" to change intrasectoral variation
 gl inc_re_scale 	"no" 	// Change for "yes"/"no" re-scale labor income using gdp
 gl matching			"yes"	// Change for "yes" or "no" to activate matching for consumption to inncome ratio
-gl Jaime 			"no"	// Calls R and performs matching there
 gl standardization	"yes"	// Performs variables standardization before matching
-gl rn_int_remitt 	"yes" 	// Change for "yes" or "no" (neutral distribution) on modelling intern. remittances
+gl rn_int_remitt 	"no" 	// Change for "yes" or "no" (neutral distribution) on modelling intern. remittances
 gl rn_dom_remitt 	"yes" 	// Change for "yes" or "no" (neutral distribution) on modelling domestic remittances
 gl cons_re_scale 	"no" 	// Change for "yes"/"no" re-scale final consumption using private consumption
 
@@ -127,8 +131,7 @@ foreach f of local files{
 * 14. relative prices adjustment (food/nonfood)
 	*run "$thedo\14_relative_prices.do"
 * 15. matching income to consumption ratio
-    if "${Jaime}" == "yes" 	run "$thedo\15_income_to_consumption_Jaime.do"
-	else 					run "$thedo\15_income_to_consumption_Kelly.do"
+    run "$thedo\15_income_to_consumption.do"
 * 16. new consumption 
 	run "$thedo\16_new_consumption.do"
 * 17. output database
@@ -142,6 +145,10 @@ foreach f of local files{
 sum poor* [aw = fexp_s] if welfare_s != .
 ineqdec0 welfare_s [aw = fexp_s]
 
+gen pline_nat_ppp = pline_nat / cpi$ppp / icp$ppp
+apoverty welfare_s [aw = fexp_s] if welfare_s != ., varpl(pline_nat_ppp) h igr gen(poor_nat)
+
+apoverty welfare_base [aw = fexp_s] if welfare_base != ., varpl(pline_nat_ppp) h igr gen(poor_nat_base)
 
 /*===================================================================================================
 	- Display running time

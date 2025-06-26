@@ -7,7 +7,7 @@ Authors:			Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
 Creation Date:		08/01/2022
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  10/28/2024
+Modification date:  02/20/2025
 ===================================================================================================*/
 
 clear all 
@@ -19,10 +19,10 @@ set timeout2 300
 ===================================================================================================*/
 
 * Load the data
-wbopendata, update all
+wbopendata, update
 wbopendata, indicator(SP.POP.TOTL; SP.POP.1564.TO; SP.POP.65UP.TO) year(2004:2030) projection clear
 
-* Keep only LAC countries
+* Keep only SAR countries
 keep if inlist(countrycode,"AFG","BGD","BTN","IND","MDV","NPL","PAK","LKA")
 keep indicatorname  countrycode countryname yr*
 replace indicatorname = "pop_15up" if indicatorname == "Population ages 15-64, total"

@@ -1,13 +1,13 @@
 
 /*===================================================================================================
-Project:			Microsimulations Inputs from Households' Surveys, 2017 PPP
+Project:			Microsimulations Inputs from Households' Surveys, PPP
 Institution:		World Bank - ESAPV
 
 Author:				Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
 Creation Date:		10/23/2024
 
 Last Modification:	Kelly Y. Montoya (kmontoyamunoz@worldbank.org)
-Modification date:  11/07/2024
+Modification date:  4/7/2025
 ===================================================================================================*/
 
 drop _all
@@ -47,7 +47,7 @@ foreach country of global countries_hhss { // Open loop countries
 		* Support module - CPIs and PPPs
 		cap dlw, country(Support) year(2005) type(GMDRAW) surveyid(Support_2005_CPI_v${cpi_version}_M) filename(Final_CPI_PPP_to_be_used.dta)
 		keep if code == "`country'" & year == `year'
-		keep code year cpi2017 icp2017
+		keep code year cpi${cpi_base} icp${cpi_base}
 		rename code countrycode
 		tempfile dlwcpi
 		save `dlwcpi', replace
@@ -83,6 +83,7 @@ foreach country of global countries_hhss { // Open loop countries
 		
 		* Skill/Unskilled classification
 		* Important!!! check this definition for all countries
+		/*Following the ILO skill level classification[1], we classify workers into high-skilled and low-skilled. Workers in occupations such as Managers (1), Professionals (2), and Technicians and Associate professionals (3) correspond to "High-skilled" workers, whilst workers in Elementary Occupations (9) are "low-skilled." Given the diverse nature of the intermediate categories of this classification (Clerical support (4), Service and Sales (6), Skilled Agricultural, Forestry and Fisheries (6), Craft and Related Trades (7), and Plant and Machine Operators, and Assembler (8)), we added a layer to the high/low skill classification by using educational attainment and considering those with complete secondary and above as "high-skilled", and "low-skilled" otherwise. This is regardless of the workers' economic activity sector (agriculture, industry, services). Armed forces are excluded from the microsimulation model and, hence, from this classification. The table below summarizes the skill-level classification used.*/
 		cap rename  lstatus_year lstatus_year_orig
 		gen     lstatus_year = lstatus
 		replace lstatus_year = 1 if  !inlist(wage,0,.)
@@ -97,8 +98,8 @@ foreach country of global countries_hhss { // Open loop countries
 		replace skilled = 1 if inrange(occup_year,1,3) 	| (inlist(occup_year,4,5,6,7,8,.) & inlist(educat7,5,6,7))
 		replace skilled = 0 if occup_year==9 			| (inlist(occup_year,4,5,6,7,8,.) & !inlist(educat7,5,6,7))
 		replace skilled = 0 if inrange(occup_year,4,8) 	& educat7 == .
+		replace skilled = . if occup_year == . & educat7 == .
 
-		//1 "Agriculture, Hunting, Fishing, etc." 2 "Mining" 3 "Manufacturing" 4 "Public Utility Services" 5 "Construction" 6 "Commerce" 7 "Transport and Communications" 8 "Financial and Business Services" 9 "Public Administration" 10 "Others
 		
 		* public job_status
 		rename ocusec_year ocusec_year_orig
@@ -112,6 +113,7 @@ foreach country of global countries_hhss { // Open loop countries
 
 		
 		* Sector main occupation
+		/* 1 "Agriculture, Hunting, Fishing, etc." 2 "Mining" 3 "Manufacturing" 4 "Public Utility Services" 5 "Construction" 6 "Commerce" 7 "Transport and Communications" 8 "Financial and Business Services" 9 "Public Administration" 10 "Others */
 		cap rename industrycat10_year industrycat10_year_orig
 		qui sum industrycat10_year_orig
 		if r(N) == 0 recode industrycat10 (1=1 "Agriculture") (2 3 4 5 =2 "Industry") (6 7 8 9 10 =3 "Services") , gen(sector_3)
@@ -122,12 +124,12 @@ foreach country of global countries_hhss { // Open loop countries
 		
 
 		* Labor income - skilled/unskilled by sector and total
-		qui gen ip_ppp17 = wage / cpi2017 / icp2017 // Labor income main activity ppp 2017
-		for any 1 2 3: qui gen ip_sk_X 	 = ip_ppp17 if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 1
-		for any 1 2 3: qui gen ip_unsk_X = ip_ppp17 if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 0
-		qui gen ip_total = ip_ppp17 if sample == 1 & lstatus_year == 1 
-		qui gen ip_sk 	 = ip_ppp17 if sample == 1 & lstatus_year == 1 & sk == 1 
-		qui gen ip_unsk  = ip_ppp17 if sample == 1 & lstatus_year == 1 & sk == 0
+		qui gen ip_ppp = wage / cpi${cpi_base} / icp${cpi_base} // Labor income main activity ppp
+		for any 1 2 3: qui gen ip_sk_X 	 = ip_ppp if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 1
+		for any 1 2 3: qui gen ip_unsk_X = ip_ppp if sample == 1 & lstatus_year == 1 & sector_3 == X & sk == 0
+		qui gen ip_total = ip_ppp if sample == 1 & lstatus_year == 1 
+		qui gen ip_sk 	 = ip_ppp if sample == 1 & lstatus_year == 1 & sk == 1 
+		qui gen ip_unsk  = ip_ppp if sample == 1 & lstatus_year == 1 & sk == 0
 
 		
 		* Number of workers - skilled/unskilled by sector

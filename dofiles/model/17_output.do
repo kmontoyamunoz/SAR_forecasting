@@ -110,9 +110,9 @@ matrix list all_p
 	4 - Saving the resulting database
 ===================================================================================================*/
 
-if "${Jaime}" == "yes" save "${data_out}/${country}_${model}_${sector_model}s_dom_${rn_dom_remitt}_int_${rn_int_remitt}_inc_${inc_re_scale}_cons_${cons_re_scale}_matching_${matching}_J.dta", replace
+cap erase "${data_out}/simulated.dta"
 
-else save "${data_out}/${country}_${model}_${sector_model}s_dom_${rn_dom_remitt}_int_${rn_int_remitt}_inc_${inc_re_scale}_cons_${cons_re_scale}_matching_${matching}_st_${standardization}.dta", replace
+save "${data_out}/${country}_${model}_${sector_model}s_dom_${rn_dom_remitt}_int_${rn_int_remitt}_inc_${inc_re_scale}_cons_${cons_re_scale}_matching_${matching}_st_${standardization}.dta", replace
 
 
 /*===================================================================================================
